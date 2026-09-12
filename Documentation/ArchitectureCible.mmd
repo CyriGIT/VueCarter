@@ -1,0 +1,10 @@
+flowchart TD
+    Nav([Navigateur]) -->|HTTPS| Proxy[Reverse proxy Nginx]
+    
+    Proxy -->|/| Vue[Frontend Vue compilé <br> fichiers statiques]
+    Proxy -->|/api/| FastAPI[API FastAPI <br> conteneur]
+    Proxy -->|/uploads/| Uploads[Stockage des médias]
+    Proxy -->|/analytics/| Metabase[Metabase]
+    
+    FastAPI ---> DB[(PostgreSQL <br> réseau privé, non exposé)]
+    Metabase ---> DB

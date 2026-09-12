@@ -1,0 +1,9 @@
+sqlalchemy
+psycopg2-binary # pas utilisé directement, utilisé via SQLAlchemy
+requests
+fastapi
+uvicorn[standard]
+python-dotenv
+PyJWT
+bcrypt
+python-multipart==0.0.32 # requis pour le traitement des formulaires multipart dans FastAPI (téléversement d'assets)

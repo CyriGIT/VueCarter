@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor U as Utilisateur
+    participant V as Frontend Vue (Pinia + Axios)
+    participant F as API FastAPI
+    participant S as Services métier
+    participant D as PostgreSQL
+
+    U->>V: Action dans l'interface
+    V->>F: Requête REST + Authorization Bearer JWT
+    F->>F: Valide la signature et le rôle du jeton
+    F->>D: Vérifie la relation métier (membre, affectation, jury)
+    D-->>F: Relation confirmée
+    F->>S: Applique les règles métier
+    S->>D: Requêtes SQL via SQLAlchemy
+    D-->>S: Lignes résultantes
+    S-->>F: Données métier calculées
+    F-->>V: Réponse JSON agrégée
+    V->>V: Met à jour l'état réactif
+    V-->>U: Interface actualisée
+
+    Note over V,D: Le frontend n'ouvre jamais de connexion directe à PostgreSQL

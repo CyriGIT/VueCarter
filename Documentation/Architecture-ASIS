@@ -1,0 +1,69 @@
+```mermaid
+flowchart LR
+    user([Utilisateur])
+
+    subgraph browser["Navigateur"]
+        vue["Frontend Vue.js<br/>Vues et composants"]
+        pinia["Stores Pinia<br/>projectStore.ts"]
+        axios["Client Axios<br/>api.ts"]
+        analytics["ExpertAnalyticsView.vue<br/>iframe Metabase"]
+
+        vue --> pinia
+        pinia --> axios
+        vue --> analytics
+    end
+
+    subgraph backend["Backend local - FastAPI :8000"]
+        api["Routes API<br/>main.py et routers/"]
+        auth["Authentification<br/>JWT et rôles"]
+        etl["Routeur ETL<br/>Spotify et MX3"]
+        services["Services externes<br/>spotify_service.py<br/>mx3_service.py"]
+        dbaccess["Accès aux données<br/>SQLAlchemy + psycopg2"]
+        storage[("Fichiers téléversés<br/>data/uploads")]
+
+        api --> auth
+        api --> dbaccess
+        api --> storage
+        etl --> auth
+        etl --> dbaccess
+        etl --> services
+    end
+
+    subgraph external["Services externes"]
+        spotify["Spotify Web API<br/>OAuth Client Credentials"]
+        mx3["API SRG SSR MX3<br/>OAuth"]
+    end
+
+    subgraph docker["Docker Compose"]
+        postgres[("PostgreSQL 15<br/>port hôte 5433")]
+        metabase["Metabase<br/>port 3000"]
+        metabaseStore[("Stockage Metabase<br/>metabase.db")]
+
+        metabase -->|"Lit les vues analytiques"| postgres
+        metabase --> metabaseStore
+    end
+
+    user --> vue
+    axios -->|"HTTP /api + JWT"| api
+    axios -->|"HTTP /api/etl + JWT"| etl
+    services -->|"HTTPS"| spotify
+    services -->|"HTTPS"| mx3
+    dbaccess -->|"SQL et transactions"| postgres
+    etl -->|"Présences, imports et métriques"| dbaccess
+
+    analytics -->|"Demande une URL signée<br/>GET /api/analytics/metabase/embed"| api
+    api -->|"URL d'intégration signée"| analytics
+    analytics -->|"Charge le tableau de bord"| metabase
+
+    classDef client fill:#e8f1ff,stroke:#2563eb,color:#172554
+    classDef server fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef data fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    classDef externalService fill:#f5f3ff,stroke:#7c3aed,color:#3b0764
+
+    class vue,pinia,axios,analytics client
+    class api,auth,etl,services,dbaccess server
+    class postgres,metabaseStore,storage data
+    class spotify,mx3,metabase externalService
+```
+
+Les catalogues Spotify et les concerts MX3 sont récupérés à la demande. Les connexions aux plateformes, les imports explicitement sélectionnés et les relevés de métriques sont enregistrés dans PostgreSQL. Metabase consulte directement les vues analytiques de PostgreSQL ; FastAPI ne transmet au frontend que l'URL d'intégration signée et filtrée selon le rôle.

@@ -1,0 +1,13 @@
+.env
+*.sql
+!2026-09-06_Insert-MockData_V7.sql
+!2026-09-06_creation_base_parcoursartiste_v12.sql
+*.yml
+!docker-compose.yml
+_*_
+*.docx
+*.pdf
+*.xlsx
+
+node_modules/
+data/uploads/
