@@ -15,8 +15,6 @@ class Settings:
     )
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
-    SHOTGUN_TICKET_API_KEY = os.getenv("SHOTGUN_TICKET_API_KEY")
-    SHOTGUN_TICKET_API_BASE_URL = os.getenv("SHOTGUN_TICKET_API_BASE_URL")
     # Flux Client Credentials : réservé aux données publiques (catalogue, pas de compte utilisateur)
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -34,10 +32,6 @@ class Settings:
     ASSET_STORAGE_DIR = Path(os.getenv("ASSET_STORAGE_DIR", PROJECT_ROOT / "data" / "uploads")).resolve()
     ASSET_PUBLIC_BASE_URL = os.getenv("ASSET_PUBLIC_BASE_URL", "http://localhost:8000/uploads").rstrip("/")
     ASSET_MAX_BYTES = int(os.getenv("ASSET_MAX_BYTES", str(25 * 1024 * 1024)))
-
-    @property
-    def shotgun_ticket_is_configured(self) -> bool:
-        return bool(self.SHOTGUN_TICKET_API_KEY and self.SHOTGUN_TICKET_API_BASE_URL)
 
     @property
     def spotify_is_configured(self) -> bool:

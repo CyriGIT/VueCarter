@@ -3,6 +3,7 @@ psycopg2-binary # pas utilisé directement, utilisé via SQLAlchemy
 requests
 fastapi
 uvicorn[standard]
+email-validator
 python-dotenv
 PyJWT
 bcrypt

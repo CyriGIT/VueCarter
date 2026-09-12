@@ -1,11 +1,10 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: postgres_parcours_artiste
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: parcours_artiste
+      POSTGRES_DB: vue_carter
     ports:
       - "5433:5432"
     volumes:
@@ -13,7 +12,6 @@ services:
 
   metabase:
     image: metabase/metabase:latest
-    container_name: metabase_parcours_artiste
     ports:
       - "3000:3000"
     environment:

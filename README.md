@@ -80,7 +80,7 @@ Ouvrir Docker Desktop, puis exécuter depuis la racine du dépôt :
 
 ```powershell
 docker compose up -d
-docker compose exec postgres pg_isready -U postgres -d parcours_artiste
+docker compose exec postgres pg_isready -U postgres -d vue_carter
 ```
 
 La seconde commande doit indiquer que PostgreSQL accepte les connexions.
@@ -91,18 +91,18 @@ Exécuter le script de création V12 une seule fois sur une base vide :
 
 ```powershell
 Get-Content -Raw .\2026-09-06_creation_base_parcoursartiste_v12.sql |
-    docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d parcours_artiste
+    docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d vue_carter
 ```
 
-Les migrations SQL historiques ne sont pas nécessaires lorsque la base est créée directement avec ce script.
+Ce script crée une base neuve entièrement.
 
 ### 7. Charger les données de démonstration (facultatif)
 
 Pour découvrir immédiatement les différents parcours de l'application :
 
 ```powershell
-Get-Content -Raw .\2026-09-06_Insert-MockData_V7.sql |
-    docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d parcours_artiste
+Get-Content -Raw .\2026-09-11_Insert-MockData_V8.sql |
+    docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U postgres -d vue_carter
 ```
 
 Ces données sont destinées uniquement au développement. Les comptes de démonstration utilisent tous le mot de passe `1234` :
@@ -185,7 +185,7 @@ Renseigner `SRGSSR_MX3_CONSUMER_KEY` et `SRGSSR_MX3_CONSUMER_SECRET` pour recher
 ### Metabase
 
 1. Ouvrir <http://localhost:3000> et terminer la configuration initiale.
-2. Ajouter PostgreSQL avec l'hôte `postgres`, le port `5432`, la base `parcours_artiste`, l'utilisateur `postgres` et le mot de passe de développement `mysecretpassword`.
+2. Ajouter PostgreSQL avec l'hôte `postgres`, le port `5432`, la base `vue_carter`, l'utilisateur `postgres` et le mot de passe de développement `mysecretpassword`.
 3. Créer un tableau de bord à partir des vues `analytics_*` présentes dans la base.
 4. Activer l'intégration statique dans Metabase.
 5. Renseigner `METABASE_EMBEDDING_SECRET_KEY`, `METABASE_DASHBOARD_ID` et `METABASE_SITE_URL=http://localhost:3000` dans `.env`.
@@ -210,7 +210,6 @@ Les fichiers téléversés sont stockés dans `data/uploads` et servis sous <htt
 Depuis la racine du dépôt, avec l'environnement Python activé :
 
 ```powershell
-python test_connexion.py
 python -m unittest discover -s backend_etl/tests -v
 ```
 
