@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,7 @@ def build_metabase_dashboard_url(params: dict | None = None) -> str:
 
 @router.get("/metabase/embed", response_model=MetabaseEmbedResponse)
 def get_metabase_embed_url(
+    project_id: int | None = Query(default=None, gt=0),
     current_user: Utilisateur = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -51,23 +52,43 @@ def get_metabase_embed_url(
         )
 
     params = {}
+    projects = []
     if current_user.role == "accompagnant":
         if current_user.id_personne is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Le compte accompagnant doit être lié à une personne.",
             )
-        project_ids = db.execute(text('''
-            SELECT id_projet
-            FROM "AffectationAccompagnement"
-            WHERE id_expert = :id_personne
-            ORDER BY id_projet
-        '''), {"id_personne": current_user.id_personne}).scalars().all()
-        if not project_ids:
+        assigned_projects = db.execute(text('''
+            SELECT projet.id_projet, projet.nom_projet
+            FROM "AffectationAccompagnement" affectation
+            JOIN "ProjetMusical" projet
+              ON projet.id_projet = affectation.id_projet
+            WHERE affectation.id_expert = :id_personne
+            ORDER BY projet.nom_projet
+        '''), {"id_personne": current_user.id_personne}).mappings().all()
+        if not assigned_projects:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Aucun projet n’est affecté à cet accompagnant.",
             )
-        params = {"filtre_par_projet": project_ids}
+        projects = [
+            {"id": project["id_projet"], "nom": project["nom_projet"]}
+            for project in assigned_projects
+        ]
+        if project_id is not None:
+            selected_project = next(
+                (project for project in assigned_projects if project["id_projet"] == project_id),
+                None,
+            )
+            if selected_project is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Ce projet n’est pas affecté à cet accompagnant.",
+                )
+            project_names = [selected_project["nom_projet"]]
+        else:
+            project_names = [project["nom_projet"] for project in assigned_projects]
+        params = {"projet": project_names}
 
-    return {"url": build_metabase_dashboard_url(params)}
+    return {"url": build_metabase_dashboard_url(params), "projects": projects}

@@ -47,9 +47,13 @@ class MetabaseEmbedTests(unittest.TestCase):
     )
     def test_accompanying_user_receives_locked_assigned_project_filter(self):
         db = MagicMock()
-        db.execute.return_value.scalars.return_value.all.return_value = [1, 4]
+        db.execute.return_value.mappings.return_value.all.return_value = [
+            {"id_projet": 1, "nom_projet": "Projet Alpha"},
+            {"id_projet": 4, "nom_projet": "Projet Delta"},
+        ]
 
         response = get_metabase_embed_url(
+            project_id=None,
             current_user=SimpleNamespace(role="accompagnant", id_personne=15),
             db=db,
         )
@@ -60,16 +64,54 @@ class MetabaseEmbedTests(unittest.TestCase):
             algorithms=["HS256"],
         )
 
-        self.assertEqual(payload["params"], {"filtre_par_projet": [1, 4]})
+        self.assertEqual(payload["params"], {"projet": ["Projet Alpha", "Projet Delta"]})
+        self.assertEqual(response["projects"], [
+            {"id": 1, "nom": "Projet Alpha"},
+            {"id": 4, "nom": "Projet Delta"},
+        ])
         self.assertEqual(db.execute.call_args.args[1], {"id_personne": 15})
         self.assertIn('FROM "AffectationAccompagnement"', str(db.execute.call_args.args[0]))
+        self.assertIn('JOIN "ProjetMusical"', str(db.execute.call_args.args[0]))
 
     def test_accompanying_user_without_assignment_is_rejected(self):
         db = MagicMock()
-        db.execute.return_value.scalars.return_value.all.return_value = []
+        db.execute.return_value.mappings.return_value.all.return_value = []
 
         with self.assertRaises(HTTPException) as context:
             get_metabase_embed_url(
+                project_id=None,
+                current_user=SimpleNamespace(role="accompagnant", id_personne=15),
+                db=db,
+            )
+
+        self.assertEqual(context.exception.status_code, 403)
+
+    @patch("backend_etl.routers.analytics.build_metabase_dashboard_url")
+    def test_accompanying_user_can_select_one_assigned_project(self, build_url):
+        db = MagicMock()
+        db.execute.return_value.mappings.return_value.all.return_value = [
+            {"id_projet": 1, "nom_projet": "Projet Alpha"},
+            {"id_projet": 4, "nom_projet": "Projet Delta"},
+        ]
+        build_url.return_value = "http://metabase/embed/dashboard/token"
+
+        get_metabase_embed_url(
+            project_id=4,
+            current_user=SimpleNamespace(role="accompagnant", id_personne=15),
+            db=db,
+        )
+
+        build_url.assert_called_once_with({"projet": ["Projet Delta"]})
+
+    def test_accompanying_user_cannot_select_unassigned_project(self):
+        db = MagicMock()
+        db.execute.return_value.mappings.return_value.all.return_value = [
+            {"id_projet": 1, "nom_projet": "Projet Alpha"},
+        ]
+
+        with self.assertRaises(HTTPException) as context:
+            get_metabase_embed_url(
+                project_id=4,
                 current_user=SimpleNamespace(role="accompagnant", id_personne=15),
                 db=db,
             )
@@ -81,6 +123,7 @@ class MetabaseEmbedTests(unittest.TestCase):
 
         with self.assertRaises(HTTPException) as context:
             get_metabase_embed_url(
+                project_id=None,
                 current_user=SimpleNamespace(role="accompagnant", id_personne=None),
                 db=db,
             )
@@ -93,6 +136,7 @@ class MetabaseEmbedTests(unittest.TestCase):
         build_url.return_value = "http://metabase/embed/dashboard/token"
 
         get_metabase_embed_url(
+            project_id=None,
             current_user=SimpleNamespace(role="expert_jury", id_personne=11),
             db=MagicMock(),
         )
@@ -102,6 +146,7 @@ class MetabaseEmbedTests(unittest.TestCase):
     def test_artist_cannot_access_analytics(self):
         with self.assertRaises(HTTPException) as context:
             get_metabase_embed_url(
+                project_id=None,
                 current_user=SimpleNamespace(role="artiste", id_personne=1),
                 db=MagicMock(),
             )
