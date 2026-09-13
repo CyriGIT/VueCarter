@@ -353,7 +353,7 @@ def connect_mx3(
             text('''
             INSERT INTO "Plateforme" (nom_plateforme, type_plateforme)
             VALUES ('MX3', 'Musique et concerts')
-            ON CONFLICT (nom_plateforme)
+            ON CONFLICT (lower(trim(nom_plateforme)))
             DO UPDATE SET type_plateforme = EXCLUDED.type_plateforme
             RETURNING id_plateforme
         ''')

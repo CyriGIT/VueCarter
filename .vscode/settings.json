@@ -1,5 +1,13 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "npm run type-check": true
+        "npm run type-check": true,
+        "/^\\.\\\\venv\\\\Scripts\\\\python\\.exe -c \"from backend_etl\\.core\\.config import settings; print\\(\\{'configured': settings\\.mx3_is_configured, 'key_present': bool\\(settings\\.SRGSSR_MX3_CONSUMER_KEY\\), 'secret_present': bool\\(settings\\.SRGSSR_MX3_CONSUMER_SECRET\\), 'api_base': settings\\.SRGSSR_MX3_API_BASE_URL, 'token_url': settings\\.SRGSSR_OAUTH_TOKEN_URL\\}\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^\\.\\\\venv\\\\Scripts\\\\python\\.exe -c \"from backend_etl\\.core\\.config import settings; from backend_etl\\.services\\.mx3_service import mx3_service; print\\('configured=', settings\\.mx3_is_configured\\); bands=mx3_service\\.search_bands\\('Novia'\\); print\\('search_count=', len\\(bands\\)\\); print\\('first_id=', bands\\[0\\]\\.get\\('id'\\) if bands else None\\); band_id=int\\(bands\\[0\\]\\['id'\\]\\) if bands else None; detail=mx3_service\\.get_band\\(band_id\\) if band_id else None; print\\('detail_keys=', sorted\\(detail\\.keys\\(\\)\\) if detail else None\\); print\\('detail_id=', detail\\.get\\('id'\\) if detail else None\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
