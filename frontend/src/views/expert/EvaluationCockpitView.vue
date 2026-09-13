@@ -830,7 +830,7 @@ const totalScore = computed(() => scoreSummary(selectedProject.value))
         </section>
       </main>
       <main v-else class="lg:col-span-8 bg-[#181a20] border border-[#282c37] rounded-xl p-6 text-sm text-gray-400">
-        Aucun projet à évaluer.
+        {{ store.accountIdentity?.role === 'accompagnant' ? 'Aucun projet affecté.' : 'Aucun projet à évaluer.' }}
       </main>
     </div>
   </div>

@@ -51,11 +51,24 @@ def list_campaigns(
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(get_current_user),
 ):
-    if current_user.role not in ("admin", "gestionnaire_case", "expert_jury"):
+    if current_user.role not in ("admin", "gestionnaire_case", "expert_jury", "accompagnant"):
         raise HTTPException(status_code=403, detail="Accès réservé aux équipes d’évaluation.")
-    if current_user.role == "expert_jury":
+    if current_user.role in ("expert_jury", "accompagnant"):
         if current_user.id_personne is None:
             return []
+        if current_user.role == "accompagnant":
+            return _campaign_rows(
+                db,
+                '''WHERE EXISTS (
+                    SELECT 1
+                    FROM "CampagneProjet" projet_affecte
+                    JOIN "AffectationAccompagnement" acces
+                      ON acces.id_projet = projet_affecte.id_projet
+                    WHERE projet_affecte.id_campagne = campagne.id_campagne
+                      AND acces.id_expert = :expert_id
+                )''',
+                {"expert_id": current_user.id_personne},
+            )
         return _campaign_rows(
             db,
             'WHERE EXISTS (SELECT 1 FROM "CampagneJure" acces WHERE acces.id_campagne = campagne.id_campagne AND acces.id_expert = :expert_id)',
@@ -244,12 +257,29 @@ def list_campaign_evaluations(
         if current_user.id_personne is None:
             raise HTTPException(status_code=403, detail="Le compte jury doit être lié à une personne.")
         require_campaign_juror(db, campaign_id, current_user.id_personne)
+    elif current_user.role == "accompagnant":
+        if current_user.id_personne is None:
+            raise HTTPException(status_code=403, detail="Le compte accompagnant doit être lié à une personne.")
     elif current_user.role not in ("admin", "gestionnaire_case"):
         raise HTTPException(status_code=403, detail="Accès réservé aux équipes d’évaluation.")
-    project_ids = db.execute(text('''
-        SELECT id_projet FROM "CampagneProjet"
-        WHERE id_campagne = :campaign_id ORDER BY id_projet
-    '''), {"campaign_id": campaign_id}).scalars().all()
+    if current_user.role == "accompagnant":
+        project_ids = db.execute(text('''
+            SELECT projet.id_projet
+            FROM "CampagneProjet" projet
+            JOIN "AffectationAccompagnement" acces
+              ON acces.id_projet = projet.id_projet
+            WHERE projet.id_campagne = :campaign_id
+              AND acces.id_expert = :expert_id
+            ORDER BY projet.id_projet
+        '''), {
+            "campaign_id": campaign_id,
+            "expert_id": current_user.id_personne,
+        }).scalars().all()
+    else:
+        project_ids = db.execute(text('''
+            SELECT id_projet FROM "CampagneProjet"
+            WHERE id_campagne = :campaign_id ORDER BY id_projet
+        '''), {"campaign_id": campaign_id}).scalars().all()
     return [
         get_evaluation_summary(db, campaign_id, project_id, current_user.id_personne)
         for project_id in project_ids
